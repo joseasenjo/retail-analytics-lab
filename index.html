@@ -104,12 +104,11 @@ with tab1:
     fig.update_layout(height=500, xaxis_title="Tráfico (Visitas por hora)", yaxis_title="Ticket Medio - AOV (€)")
     st.plotly_chart(fig, use_container_width=True)
 
-    # Conceptos Teóricos Colapsables
     with st.expander("📚 Conceptos Clave: La Psicología del Tráfico y la Intención de Compra"):
         st.markdown("""
         **Relación Inversa entre Tráfico y Ticket Medio:**
-        * **Sectores de Alta Fricción / Alta Meditación (Lujo / Tecnología):** El tráfico es bajo porque el consumidor requiere múltiples visitas e investigación antes de decidir. La conversión es baja, pero se compensa con un **AOV (Ticket Medio)** muy elevado.
-        * **Sectores de Necesidad / Fricción Cero (Gran Consumo / Supermercados):** El tráfico y la conversión son masivos (hasta el 88%) porque la intención de compra es directa. La rentabilidad se logra por volumen de cestas y unidades por ticket (**UPT**), no por un AOV alto.
+        * **Sectores de Alta Fricción (Lujo / Tecnología):** Tráfico bajo porque requiere múltiples visitas e investigación. Conversión baja, pero compensada con un **AOV (Ticket Medio)** muy elevado.
+        * **Sectores de Fricción Cero (Gran Consumo):** Tráfico masivo porque la intención de compra es directa. La rentabilidad se logra por volumen de cestas y unidades por ticket (**UPT**).
         """)
 
 # --- TAB 2: SIMULADOR & EMBUDO ---
@@ -143,7 +142,6 @@ with tab2:
         c2.metric("Compradores", f"{int(compradores_tot)}")
         c3.metric("Facturación", f"{facturacion:,.2f} €")
         
-        # Embudo de Conversión
         fig_funnel = go.Figure(go.Funnel(
             y = ["Visitas Totales", "Compradores", "Artículos Vendidos"],
             x = [visitas_tot, compradores_tot, articulos_tot],
@@ -153,21 +151,28 @@ with tab2:
         fig_funnel.update_layout(height=260, margin=dict(l=10, r=10, t=10, b=10))
         st.plotly_chart(fig_funnel, use_container_width=True)
 
-    # Generador de Insights para LinkedIn
     st.write("---")
     if st.button("📝 Generar Insight para LinkedIn"):
         clave_analitica = "El volumen de visitas compensa el margen ajustado por ticket." if t_input > 20 else "La alta exclusividad requiere maximizar el AOV y la venta cruzada (UPT)."
-        insight_text = f"📊 Retail Analytics Insight ({sector_sel} - {selected_market}):\n\nEn una jornada de 8h, con un tráfico de {int(t_input)} visitas/hora y una conversión del {c_input}% (AOV: {a_input}€, UPT: {u_input}), estimamos una facturación proyectada de {facturacion:,.2f}€.\n\n💡 Clave analítica: {clave_analitica}\n\nHerramienta desarrollada por Jose Luis Asenjo."
-        st.text_area("Copia y pega este texto en tu publicación de LinkedIn:", insight_text, height=160)
+        
+        # USO DE COMILLAS TRIPLES PARA EVITAR ERRORES DE SINTAXIS CON SALTOS DE LÍNEA
+        insight_text = f"""📊 Retail Analytics Insight ({sector_sel} - {selected_market}):
 
-    # Conceptos Teóricos Colapsables
-    with st.expander("📚 Conceptos Clave: La Matemática de la Rentabilidad en Retail"):
+En una jornada de 8h, con un tráfico de {int(t_input)} visitas/hora y una conversión del {c_input}% (AOV: {a_input}€, UPT: {u_input}), estimamos una facturación proyectada de {facturacion:,.2f}€.
+
+💡 Clave analítica: {clave_analitica}
+
+Herramienta desarrollada por Jose Luis Asenjo."""
+        
+        st.text_area("Copia y pega este texto en tu publicación de LinkedIn:", insight_text, height=200)
+
+    with st.expander("📚 Conceptos Clave: La Matemática de la Rentabilidad"):
         st.markdown("""
         **Fórmula Fundamental de Venta:**
-        $$\text{Facturación} = \text{Tráfico} \times \text{Conversión (\%)} \times \text{Ticket Medio (AOV)}$$
+        $$\\text{Facturación} = \\text{Tráfico} \\times \\text{Conversión} \\times \\text{AOV}$$
         
-        * **UPT (Units Per Transaction):** Mide la eficacia de la venta cruzada. Elevar el UPT incrementa el AOV sin necesidad de aumentar el precio unitario de los productos.
-        * **Funnel Efficiency:** La brecha entre el tráfico total y los compradores reales indica el nivel de fricción en la tienda o checkout.
+        * **UPT (Units Per Transaction):** Elevar el UPT incrementa el AOV sin necesidad de subir precios.
+        * **Funnel Efficiency:** La brecha entre el tráfico y los compradores indica el nivel de fricción en tienda.
         """)
 
 # --- TAB 3: EDITOR & EXPORTACIÓN ---
@@ -205,12 +210,10 @@ with tab3:
         st.success("¡Baremos base actualizados!")
         st.rerun()
 
-    # Conceptos Teóricos Colapsables
-    with st.expander("📚 Conceptos Clave: Baremos Dinámicos vs. Baremos Estáticos"):
+    with st.expander("📚 Conceptos Clave: Baremos Dinámicos"):
         st.markdown("""
         **¿Por qué usar Baremos Flexibles?**
-        Los promedios estáticos del sector quedan desfasados rápidamente por la inflación o cambios regionales. 
-        Permitir que el analista ajuste o cargue sus propios datasets garantiza que los modelos de proyección reflejen la realidad operativa de la empresa.
+        Los promedios estáticos quedan desfasados rápidamente por la inflación o cambios regionales. Permitir que el analista cargue sus propios datasets garantiza proyecciones realistas.
         """)
 
 # --- TAB 4: AUDITORÍA & GOBERNANZA ---
@@ -256,12 +259,10 @@ with tab4:
             mime="text/csv"
         )
 
-    # Conceptos Teóricos Colapsables
-    with st.expander("📚 Conceptos Clave: Trazabilidad y Criptografía en Analítica"):
+    with st.expander("📚 Conceptos Clave: Criptografía en Analítica"):
         st.markdown("""
         **Seguridad y Transparencia:**
-        Un **Hash SHA-256** es una huella digital única generada a partir del conjunto de datos activos. 
-        Si se modifica un solo número o coma del benchmark, la firma cambia por completo. Esto impide la alteración silenciosa de datos y garantiza que los informes ejecutivos sean auditables.
+        El **Hash SHA-256** es una huella digital única. Si se modifica un solo número del benchmark, la firma cambia por completo, impidiendo la alteración silenciosa de datos.
         """)
 
 # --- PIE DE PÁGINA (FOOTER) ---
