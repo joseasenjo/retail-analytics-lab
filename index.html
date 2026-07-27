@@ -156,14 +156,9 @@ with tab2:
     # Generador de Insights para LinkedIn
     st.write("---")
     if st.button("📝 Generar Insight para LinkedIn"):
-        insight_text = (
-            f"📊 Retail Analytics Insight ({sector_sel} - {selected_market}):\n\n"
-            f"En una jornada de 8h, con un tráfico de {int(t_input)} visitas/hora y una conversión del {c_input}% "
-            f"(AOV: {a_input}€, UPT: {u_input}), estimamos una facturación proyectada de {facturacion:,.2f}€.\n\n"
-            f"💡 Clave analítica: {'El volumen de visitas compensa el margen ajustado por ticket.' if t_input > 20 else 'La alta exclusividad requiere maximizar el AOV y la venta cruzada (UPT).'}\n\n"
-            f"Herramienta desarrollada por Jose Luis Asenjo."
-        )
-        st.text_area("Copia y pega este texto en tu publicación de LinkedIn:", insight_text, height=140)
+        clave_analitica = "El volumen de visitas compensa el margen ajustado por ticket." if t_input > 20 else "La alta exclusividad requiere maximizar el AOV y la venta cruzada (UPT)."
+        insight_text = f"📊 Retail Analytics Insight ({sector_sel} - {selected_market}):\n\nEn una jornada de 8h, con un tráfico de {int(t_input)} visitas/hora y una conversión del {c_input}% (AOV: {a_input}€, UPT: {u_input}), estimamos una facturación proyectada de {facturacion:,.2f}€.\n\n💡 Clave analítica: {clave_analitica}\n\nHerramienta desarrollada por Jose Luis Asenjo."
+        st.text_area("Copia y pega este texto en tu publicación de LinkedIn:", insight_text, height=160)
 
     # Conceptos Teóricos Colapsables
     with st.expander("📚 Conceptos Clave: La Matemática de la Rentabilidad en Retail"):
@@ -224,7 +219,7 @@ with tab4:
     
     col_h1, col_h2 = st.columns([2, 1])
     with col_h1:
-        st.info(f"**Hash SHA-256 Actual:**\n<code>{current_hash}</code>", icon="🔒")
+        st.info(f"**Hash SHA-256 Actual:** {current_hash}", icon="🔒")
     with col_h2:
         st.success("**Gobernanza:** Integridad Verificada")
 
