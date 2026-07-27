@@ -24,26 +24,27 @@ from datetime import datetime
 
 st.set_page_config(page_title="Retail Analytics Lab", page_icon="📊", layout="wide")
 
-# --- FUNCIONES DE AUDITORÍA Y HASH ---
+# --- BAREMOS BASE POR DEFECTO ---
+INITIAL_DATA = {
+    "Sector": ["Textil", "Gran Consumo", "Salud & Belleza", "Tecnología", "Hogar & Brico", "Lujo & Joyas", "Deportes"],
+    "Conversión (%)": [22.0, 88.0, 35.0, 14.0, 48.0, 4.5, 26.0],
+    "UPT": [1.85, 4.50, 2.40, 1.30, 2.10, 1.10, 2.10],
+    "AOV (€)": [38.0, 19.5, 24.0, 145.0, 65.0, 450.0, 42.0],
+    "Tráfico (visitas/h)": [15.0, 25.0, 18.0, 8.0, 12.0, 4.0, 16.0]
+}
+
 def calculate_hash(dataframe):
     data_bytes = dataframe.to_csv(index=False).encode('utf-8')
     return hashlib.sha256(data_bytes).hexdigest()
 
-# --- INICIALIZACIÓN DE SESSION STATE ---
+# --- INICIALIZACIÓN DE ESTADO (SESSION STATE) ---
 if "base_df" not in st.session_state:
-    initial_data = {
-        "Sector": ["Textil", "Gran Consumo", "Salud & Belleza", "Tecnología", "Hogar & Brico", "Lujo & Joyas", "Deportes"],
-        "Conversión (%)": [22.0, 88.0, 35.0, 14.0, 48.0, 4.5, 26.0],
-        "UPT": [1.85, 4.50, 2.40, 1.30, 2.10, 1.10, 2.10],
-        "AOV (€)": [38.0, 19.5, 24.0, 145.0, 65.0, 450.0, 42.0],
-        "Tráfico (visitas/h)": [15.0, 25.0, 18.0, 8.0, 12.0, 4.0, 16.0]
-    }
-    st.session_state.base_df = pd.DataFrame(initial_data)
+    st.session_state.base_df = pd.DataFrame(INITIAL_DATA)
 
 if "audit_log" not in st.session_state:
     st.session_state.audit_log = []
 
-# --- BARRA LATERAL: SEGMENTACIÓN INTERNACIONAL ---
+# --- BARRA LATERAL ---
 st.sidebar.header("🌍 Segmentación Internacional")
 mercados = {
     "España (Base 1.0x)": {"aov": 1.0, "trafico": 1.0, "conv": 1.0},
@@ -55,7 +56,15 @@ mercados = {
 selected_market = st.sidebar.selectbox("Selecciona Mercado Geográfico:", list(mercados.keys()))
 mults = mercados[selected_market]
 
-# Aplicar multiplicadores de mercado
+st.sidebar.write("---")
+st.sidebar.header("⚙️ Restablecer Sistema")
+if st.sidebar.button("🔄 Restaurar Baremos COP Lab v4"):
+    st.session_state.base_df = pd.DataFrame(INITIAL_DATA)
+    st.session_state.audit_log = []
+    st.sidebar.success("¡Valores restaurados por defecto!")
+    st.rerun()
+
+# --- DATOS ACTIVOS ---
 df_active = st.session_state.base_df.copy()
 df_active["AOV (€)"] = (df_active["AOV (€)"] * mults["aov"]).round(2)
 df_active["Tráfico (visitas/h)"] = (df_active["Tráfico (visitas/h)"] * mults["trafico"]).round(1)
@@ -63,9 +72,9 @@ df_active["Conversión (%)"] = (df_active["Conversión (%)"] * mults["conv"]).cl
 
 current_hash = calculate_hash(df_active)
 
-# --- ENCABEZADO ---
+# --- ENCABEZADO PRINCIPAL ---
 st.title("📊 Retail Analytics Lab & Benchmark Simulator")
-st.caption(f"Mercado Activo: **{selected_market}** | SHA-256 Hash: <code>{current_hash[:12]}...</code>", unsafe_allow_html=True)
+st.caption(f"Mercado Activo: **{selected_market}** | Hash de Configuración: <code>{current_hash[:16]}...</code>", unsafe_allow_html=True)
 
 # --- PESTAÑAS PRINCIPALES ---
 tab1, tab2, tab3, tab4 = st.tabs([
@@ -77,8 +86,8 @@ tab1, tab2, tab3, tab4 = st.tabs([
 
 # --- TAB 1: MAPA PSICOLÓGICO ---
 with tab1:
-    st.subheader("Mapa Psicológico del Retail (Tráfico vs. Ticket Medio)")
-    st.write("El tamaño de cada burbuja representa la **Tasa de Conversión (%)** adaptada a la región seleccionada.")
+    st.subheader("Tráfico vs. Ticket Medio (AOV)")
+    st.write("El tamaño de cada burbuja representa la **Tasa de Conversión (%)** del sector.")
     
     fig = px.scatter(
         df_active,
@@ -92,12 +101,20 @@ with tab1:
         template="plotly_white"
     )
     fig.update_traces(textposition='top center')
-    fig.update_layout(height=520, xaxis_title="Tráfico (Visitas por hora)", yaxis_title="Ticket Medio - AOV (€)")
+    fig.update_layout(height=500, xaxis_title="Tráfico (Visitas por hora)", yaxis_title="Ticket Medio - AOV (€)")
     st.plotly_chart(fig, use_container_width=True)
+
+    # Conceptos Teóricos Colapsables
+    with st.expander("📚 Conceptos Clave: La Psicología del Tráfico y la Intención de Compra"):
+        st.markdown("""
+        **Relación Inversa entre Tráfico y Ticket Medio:**
+        * **Sectores de Alta Fricción / Alta Meditación (Lujo / Tecnología):** El tráfico es bajo porque el consumidor requiere múltiples visitas e investigación antes de decidir. La conversión es baja, pero se compensa con un **AOV (Ticket Medio)** muy elevado.
+        * **Sectores de Necesidad / Fricción Cero (Gran Consumo / Supermercados):** El tráfico y la conversión son masivos (hasta el 88%) porque la intención de compra es directa. La rentabilidad se logra por volumen de cestas y unidades por ticket (**UPT**), no por un AOV alto.
+        """)
 
 # --- TAB 2: SIMULADOR & EMBUDO ---
 with tab2:
-    st.subheader("Simulador de Escenarios & Embudo de Conversión")
+    st.subheader("Simulador de Escenarios Financieros")
     
     col_ctrl, col_res = st.columns([1, 1.2])
     
@@ -106,11 +123,11 @@ with tab2:
         s_data = df_active[df_active["Sector"] == sector_sel].iloc[0]
         
         st.write("---")
-        st.markdown("**Ajusta las Palancas Operativas:**")
+        st.markdown("**Palancas Operativas:**")
         t_input = st.slider("Tráfico (visitas/h)", 1.0, 80.0, float(s_data["Tráfico (visitas/h)"]))
         c_input = st.slider("Conversión (%)", 0.5, 100.0, float(s_data["Conversión (%)"]))
         a_input = st.slider("Ticket Medio AOV (€)", 5.0, 1000.0, float(s_data["AOV (€)"]))
-        u_input = st.slider("Artículos por Cesta (UPT)", 1.0, 10.0, float(s_data["UPT"]))
+        u_input = st.slider("Unidades por Ticket (UPT)", 1.0, 10.0, float(s_data["UPT"]))
 
     with col_res:
         horas = 8
@@ -119,69 +136,104 @@ with tab2:
         articulos_tot = compradores_tot * u_input
         facturacion = compradores_tot * a_input
         
-        st.markdown(f"#### Proyección Comercial (Jornada 8h): **{sector_sel}**")
+        st.markdown(f"#### Proyección Comercial (8 horas): **{sector_sel}**")
         
         c1, c2, c3 = st.columns(3)
         c1.metric("Visitas Totales", f"{int(visitas_tot)}")
         c2.metric("Compradores", f"{int(compradores_tot)}")
         c3.metric("Facturación", f"{facturacion:,.2f} €")
         
-        st.write("---")
-        st.markdown("**🔻 Embudo de Conversión (Funnel)**")
-        
+        # Embudo de Conversión
         fig_funnel = go.Figure(go.Funnel(
             y = ["Visitas Totales", "Compradores", "Artículos Vendidos"],
             x = [visitas_tot, compradores_tot, articulos_tot],
             textinfo = "value+percent initial",
             marker = {"color": ["#636EFA", "#EF553B", "#00CC96"]}
         ))
-        fig_funnel.update_layout(height=280, margin=dict(l=20, r=20, t=20, b=20))
+        fig_funnel.update_layout(height=260, margin=dict(l=10, r=10, t=10, b=10))
         st.plotly_chart(fig_funnel, use_container_width=True)
 
-# --- TAB 3: EDITOR & CARGA EXCEL/CSV ---
+    # Generador de Insights para LinkedIn
+    st.write("---")
+    if st.button("📝 Generar Insight para LinkedIn"):
+        insight_text = (
+            f"📊 Retail Analytics Insight ({sector_sel} - {selected_market}):\n\n"
+            f"En una jornada de 8h, con un tráfico de {int(t_input)} visitas/hora y una conversión del {c_input}% "
+            f"(AOV: {a_input}€, UPT: {u_input}), estimamos una facturación proyectada de {facturacion:,.2f}€.\n\n"
+            f"💡 Clave analítica: {'El volumen de visitas compensa el margen ajustado por ticket.' if t_input > 20 else 'La alta exclusividad requiere maximizar el AOV y la venta cruzada (UPT).'}\n\n"
+            f"Herramienta desarrollada por Jose Luis Asenjo."
+        )
+        st.text_area("Copia y pega este texto en tu publicación de LinkedIn:", insight_text, height=140)
+
+    # Conceptos Teóricos Colapsables
+    with st.expander("📚 Conceptos Clave: La Matemática de la Rentabilidad en Retail"):
+        st.markdown("""
+        **Fórmula Fundamental de Venta:**
+        $$\text{Facturación} = \text{Tráfico} \times \text{Conversión (\%)} \times \text{Ticket Medio (AOV)}$$
+        
+        * **UPT (Units Per Transaction):** Mide la eficacia de la venta cruzada. Elevar el UPT incrementa el AOV sin necesidad de aumentar el precio unitario de los productos.
+        * **Funnel Efficiency:** La brecha entre el tráfico total y los compradores reales indica el nivel de fricción en la tienda o checkout.
+        """)
+
+# --- TAB 3: EDITOR & EXPORTACIÓN ---
 with tab3:
     st.subheader("✏️ Editor de Baremos & Carga de Datos")
-    st.write("Edita directamente las celdas en la tabla o sube tu propia hoja de datos en Excel/CSV.")
     
-    file_upload = st.file_uploader("Subir archivo Excel o CSV (columnas: Sector, Conversión (%), UPT, AOV (€), Tráfico (visitas/h)):", type=["csv", "xlsx"])
-    
-    if file_upload is not None:
-        try:
-            if file_upload.name.endswith(".csv"):
-                new_df = pd.read_csv(file_upload)
-            else:
-                new_df = pd.read_excel(file_upload)
-            
-            st.session_state.base_df = new_df
-            st.success("¡Datos cargados con éxito desde el archivo!")
-            st.rerun()
-        except Exception as e:
-            st.error(f"Error al leer el archivo: {e}")
+    col_up, col_dl = st.columns([2, 1])
+    with col_up:
+        file_upload = st.file_uploader("Subir archivo Excel o CSV:", type=["csv", "xlsx"])
+        if file_upload is not None:
+            try:
+                new_df = pd.read_csv(file_upload) if file_upload.name.endswith(".csv") else pd.read_excel(file_upload)
+                st.session_state.base_df = new_df
+                st.success("¡Datos cargados con éxito!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error al leer archivo: {e}")
 
-    st.write("**Editor de Datos en Vivo:**")
+    with col_dl:
+        st.write("**Exportar Baremos Activos:**")
+        csv_bytes = df_active.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Descargar Baremos (CSV)",
+            data=csv_bytes,
+            file_name=f"baremos_retail_{selected_market.split(' ')[0]}.csv",
+            mime="text/csv"
+        )
+
+    st.write("---")
+    st.write("**Edición directa en celdas:**")
     edited_df = st.data_editor(st.session_state.base_df, num_rows="dynamic", use_container_width=True)
     
-    if st.button("💾 Guardar Cambios en Baremos Base"):
+    if st.button("💾 Guardar Cambios en Baremos"):
         st.session_state.base_df = edited_df
         st.success("¡Baremos base actualizados!")
         st.rerun()
 
+    # Conceptos Teóricos Colapsables
+    with st.expander("📚 Conceptos Clave: Baremos Dinámicos vs. Baremos Estáticos"):
+        st.markdown("""
+        **¿Por qué usar Baremos Flexibles?**
+        Los promedios estáticos del sector quedan desfasados rápidamente por la inflación o cambios regionales. 
+        Permitir que el analista ajuste o cargue sus propios datasets garantiza que los modelos de proyección reflejen la realidad operativa de la empresa.
+        """)
+
 # --- TAB 4: AUDITORÍA & GOBERNANZA ---
 with tab4:
-    st.subheader("🛡️ Motor de Auditoría & Hash de Configuración")
+    st.subheader("🛡️ Motor de Auditoría & Hash SHA-256")
     
     col_h1, col_h2 = st.columns([2, 1])
     with col_h1:
-        st.info(f"**Hash SHA-256 Actual de Configuración:**\n<code>{current_hash}</code>", icon="🔒")
+        st.info(f"**Hash SHA-256 Actual:**\n<code>{current_hash}</code>", icon="🔒")
     with col_h2:
-        st.success("**Estado:** Verified (COP Lab v4)")
-    
+        st.success("**Gobernanza:** Integridad Verificada")
+
     st.write("---")
-    st.markdown("#### Registrar un Cambio de Baremo (Log de Auditoría)")
+    st.markdown("#### Registro de Auditoría de Cambios")
     
     with st.form("audit_form"):
-        fuente_input = st.text_input("Fuente de los datos / Justificación:")
-        motivo_input = st.text_area("Motivo del cambio o ajuste:")
+        fuente_input = st.text_input("Fuente declarada de los datos:")
+        motivo_input = st.text_area("Motivo o justificación de la modificación:")
         submitted = st.form_submit_button("Registrar Evento de Auditoría")
         
         if submitted and fuente_input:
@@ -194,17 +246,34 @@ with tab4:
                 "Motivo": motivo_input
             }
             st.session_state.audit_log.append(entry)
-            st.success("Evento de auditoría guardado con éxito en el Log.")
+            st.success("Evento guardado en el log de auditoría.")
 
     if st.session_state.audit_log:
-        st.write("#### 📜 Histórico de Auditoría Registrado:")
-        st.dataframe(pd.DataFrame(st.session_state.audit_log), use_container_width=True)
+        audit_df = pd.DataFrame(st.session_state.audit_log)
+        st.write("#### 📜 Log de Eventos:")
+        st.dataframe(audit_df, use_container_width=True)
+        
+        audit_csv = audit_df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Descargar Log de Auditoría (CSV)",
+            data=audit_csv,
+            file_name="log_auditoria_retail.csv",
+            mime="text/csv"
+        )
+
+    # Conceptos Teóricos Colapsables
+    with st.expander("📚 Conceptos Clave: Trazabilidad y Criptografía en Analítica"):
+        st.markdown("""
+        **Seguridad y Transparencia:**
+        Un **Hash SHA-256** es una huella digital única generada a partir del conjunto de datos activos. 
+        Si se modifica un solo número o coma del benchmark, la firma cambia por completo. Esto impide la alteración silenciosa de datos y garantiza que los informes ejecutivos sean auditables.
+        """)
 
 # --- PIE DE PÁGINA (FOOTER) ---
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: #666; padding: 15px; font-size: 14px;'>"
-    "Desarrollado por <b>Jose Luis Asenjo</b> | Retail Analytics Lab v4.0"
+    "<div style='text-align: center; color: #555; padding: 20px; font-size: 14px; font-weight: 500;'>"
+    "Desarrollado por <b>Jose Luis Asenjo</b> | Retail Analytics Lab"
     "</div>", 
     unsafe_allow_html=True
 )
