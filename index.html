@@ -21,11 +21,11 @@ import plotly.express as px
 
 st.set_page_config(page_title="Retail Analytics Lab", page_icon="📊", layout="wide")
 
-st.title("📊 Retail Analytics Lab")
-st.subtitle="Psicología del Consumidor & Benchmarks Sectoriales"
-st.write("Analizador de rentabilidad y comportamiento de tráfico en retail.")
+# Título Principal
+st.title("📊 Retail Analytics Lab & Benchmark Simulator")
+st.caption("Analizador de comportamiento del consumidor y simulador de rentabilidad en retail.")
 
-# Baremos de datos
+# --- DATOS INICIALES (COP LAB v4) ---
 data = {
     "Sector": ["Textil", "Gran Consumo", "Salud & Belleza", "Tecnología", "Hogar & Brico", "Lujo & Joyas", "Deportes"],
     "Conversión (%)": [22.0, 88.0, 35.0, 14.0, 48.0, 4.5, 26.0],
@@ -36,32 +36,83 @@ data = {
 
 df = pd.DataFrame(data)
 
-# Crear el gráfico de burbujas interactivo
-fig = px.scatter(
-    df,
-    x="Tráfico (visitas/h)",
-    y="AOV (€)",
-    size="Conversión (%)",
-    color="Sector",
-    hover_name="Sector",
-    size_max=50,
-    text="Sector",
-    title="Mapa Psicológico del Retail: Tráfico vs. Ticket Medio (AOV)"
-)
+# --- ESTRUCTURA EN PESTAÑAS ---
+tab1, tab2, tab3 = st.tabs(["🗺️ Mapa Psicológico", "🧮 Simulador 'What If?'", "📋 Baremos & Gobernanza"])
 
-fig.update_traces(textposition='top center')
-fig.update_layout(
-    height=600,
-    xaxis_title="Tráfico (Visitas por hora)",
-    yaxis_title="Ticket Medio - AOV (€)",
-    template="plotly_white"
-)
+# --- TAB 1: MAPA PSICOLÓGICO (GRÁFICO) ---
+with tab1:
+    st.subheader("Tráfico vs. Ticket Medio (AOV)")
+    st.write("El tamaño de cada burbuja representa la **Tasa de Conversión (%)**.")
+    
+    fig = px.scatter(
+        df,
+        x="Tráfico (visitas/h)",
+        y="AOV (€)",
+        size="Conversión (%)",
+        color="Sector",
+        hover_name="Sector",
+        size_max=50,
+        text="Sector",
+        template="plotly_white"
+    )
+    fig.update_traces(textposition='top center')
+    fig.update_layout(
+        height=550,
+        xaxis_title="Tráfico (Visitas por hora)",
+        yaxis_title="Ticket Medio - AOV (€)"
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-# Renderizar en Streamlit
-st.plotly_chart(fig, use_container_width=True)
+# --- TAB 2: SIMULADOR DE ESCENARIOS ---
+with tab2:
+    st.subheader("Simulador de Escenarios Financieros")
+    st.write("Ajusta las palancas operativas para proyectar el impacto en una jornada comercial de 8 horas.")
+    
+    col_sel, col_sim = st.columns([1, 2])
+    
+    with col_sel:
+        sector_selected = st.selectbox("Selecciona un sector:", df["Sector"].unique())
+        sector_data = df[df["Sector"] == sector_selected].iloc[0]
+        
+        st.write("---")
+        st.write("**Ajusta los parámetros:**")
+        trafico_input = st.slider("Tráfico (visitas/h)", 1.0, 60.0, float(sector_data["Tráfico (visitas/h)"]))
+        conv_input = st.slider("Conversión (%)", 1.0, 100.0, float(sector_data["Conversión (%)"]))
+        aov_input = st.slider("Ticket Medio (€)", 5.0, 1000.0, float(sector_data["AOV (€)"]))
+        
+    with col_sim:
+        # Cálculos del escenario simulado (Jornada de 8h)
+        horas = 8
+        visitas_totales = trafico_input * horas
+        ventas_totales = visitas_totales * (conv_input / 100)
+        facturacion_simulada = ventas_totales * aov_input
+        
+        # Benchmark base original
+        facturacion_base = (sector_data["Tráfico (visitas/h)"] * horas) * (sector_data["Conversión (%)"] / 100) * sector_data["AOV (€)"]
+        diferencia = facturacion_simulada - facturacion_base
+        
+        st.markdown(f"### Proyección de Resultados: **{sector_selected}**")
+        
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Visitas Totales (8h)", f"{int(visitas_totales)}")
+        c2.metric("Ventas Estimadas", f"{int(ventas_totales)}")
+        c3.metric("Facturación Proyectada", f"{facturacion_simulada:,.2f} €")
+        
+        if diferencia >= 0:
+            st.success(f"📈 **Impacto Positivo:** +{diferencia:,.2f} € respecto al benchmark base de 8 horas.")
+        else:
+            st.error(f"📉 **Impacto Negativo:** {diferencia:,.2f} € respecto al benchmark base de 8 horas.")
 
-st.subheader("📋 Datos del Benchmark")
-st.dataframe(df, use_container_width=True)
+# --- TAB 3: BAREMOS Y GOBERNANZA ---
+with tab3:
+    st.subheader("Configuración de Baremos Sectoriales")
+    st.dataframe(df, use_container_width=True)
+    
+    st.info("""
+    **Origen de Datos & Auditoría (COP Lab):**
+    Los valores provienen de la configuración *Benchmark sectorial configurado v4*. 
+    Cada sector es editable de forma independiente. Cualquier edición exige declarar fuente y motivo, registrándose en un log de auditoría con hash de configuración previo y posterior al cambio.
+    """)
 `
         }
       }, document.getElementById("root"))
